@@ -29,10 +29,13 @@ colors = {
 }
 
 # Available models list
-available_models = ["gpt-3.5-turbo", "gpt-4", "davinci-codex", "curie-codex"]
-
-# Special commands list
-commands = ['exit', 'save']
+available_models = [
+    "gpt-3.5-turbo",
+    "gpt-3.5-turbo-16k",
+    "gpt-4",
+    "gpt-4-32k",
+    "dall-e-3"
+]
     
 # Function to save chat history to a file
 def save_history_to_file(history):
@@ -67,12 +70,24 @@ def chat_with_gpt(prompt, history, model):
     client = OpenAI(api_key=api_key)
 
     try:
-        messages = history + [{"role": "user", "content": prompt}]
-        completion = client.chat.completions.create(
-            model=model,
-            messages=messages,
-        )
-        return completion.choices[0].message.content
+        if model == "dall-e-3":
+            response = client.images.generate(
+                model=model,
+                prompt=prompt,
+                size="1024x1024",
+                quality="standard",
+                n=1,
+            )
+            
+            return response.data[0].url
+        else:
+            messages = history + [{"role": "user", "content": prompt}]
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+            )
+            
+            return response.choices[0].message.content
     except RateLimitError:
         return "Rate limit exceeded. Please try again later."
     except OpenAIError as e:
