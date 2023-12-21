@@ -54,7 +54,3 @@ Enter your prompts in the CLI, and the script will interact with you using OpenA
 ## Notes
 - The script uses ANSI color codes for CLI coloring, which might not work correctly on all terminals.
 - Keep your API keys secure and never share them in public repositories.
-
-## License
-
-MIT License
