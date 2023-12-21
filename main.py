@@ -28,13 +28,24 @@ colors = {
     "reset": "\033[0m"
 }
 
-# Available models list
-available_models = [
+# Models list
+models = [
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-16k",
     "gpt-4",
     "gpt-4-32k",
-    "dall-e-3"
+    "dall-e-3",
+    "tts-1"
+]
+
+# Models list
+voices = [
+    "alloy",
+    "echo",
+    "fable",
+    "onyx",
+    "nova",
+    "shimmer"
 ]
     
 # Function to save chat history to a file
@@ -57,6 +68,27 @@ def save_history_to_file(history):
         json.dump(history, file, indent=4)
         
     print(f"{colors['green']}\n\nHistory saved to {file_path}{colors['reset']}")
+    
+
+# Function to select an item from a list
+def select_from_list(list, name, default):
+    # Display list
+    print(f"{colors['blue']}Select a {name}:")
+    for i, selection in enumerate(list, start=1):
+        print(f"{colors['yellow']}{i}. {selection}{colors['reset']}")
+
+    selection_choice = input(f"{colors['purple']}\nEnter your choice (number or name): {colors['reset']}").strip()
+
+    # Set the model based on user input
+    if selection_choice.isdigit() and 1 <= int(selection_choice) <= len(list):
+        selection = list[int(selection_choice) - 1]
+    elif selection_choice in list:
+        selection = selection_choice
+    else:
+        print(f"{colors['red']}Invalid choice. Defaulting to '{default}'.{colors['reset']}")
+        selection = default
+        
+    return selection
 
 
 # Function to chat with a specified GPT model
@@ -80,6 +112,26 @@ def chat_with_gpt(prompt, history, model):
             )
             
             return response.data[0].url
+        elif model == "tts-1":
+            voice = select_from_list(voices, "voice", "alloy")
+        
+            response = client.audio.speech.create(
+                model=model,
+                voice=voice,
+                input=prompt
+            )
+    
+            # Ensure the folder exists
+            if not os.path.exists("speeches"):
+                os.makedirs("speeches")
+        
+            # Create a timestamped filename
+            filename = datetime.now().strftime("%Y%m%d_%H%M%S.mp3")
+            file_path = os.path.join("speeches", filename)
+                
+            response.stream_to_file(file_path)
+            
+            return f"Audio saved to {file_path}"
         else:
             messages = history + [{"role": "user", "content": prompt}]
             response = client.chat.completions.create(
@@ -99,22 +151,8 @@ def chat_with_gpt(prompt, history, model):
 # Main function to run the script
 def main():
     history = []
-    
-    # Display available models
-    print(f"{colors['blue']}Select a GPT model:")
-    for i, model in enumerate(available_models, start=1):
-        print(f"{colors['yellow']}{i}. {model}{colors['reset']}")
-
-    model_choice = input(f"{colors['purple']}\nEnter your choice (number or model name): {colors['reset']}").strip()
-
-    # Set the model based on user input
-    if model_choice.isdigit() and 1 <= int(model_choice) <= len(available_models):
-        model = available_models[int(model_choice) - 1]
-    elif model_choice in available_models:
-        model = model_choice
-    else:
-        print(f"{colors['red']}Invalid choice. Defaulting to 'gpt-3.5-turbo'.{colors['reset']}")
-        model = "gpt-3.5-turbo"
+        
+    model = select_from_list(models, "GPT model", "gpt-3.5-turbo")
     
     try:
         # Chat loop
