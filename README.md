@@ -36,10 +36,12 @@ This repository contains a Python script for a chatbot that interacts with OpenA
 2. **Create a `.env` File**:
     - In the root of the project directory, create a file named `.env`.
     - Add your OpenAI API key in this format:
+  
       ```makefile
       OPENAI_API_KEY=YOUR-KEY-HERE
       ```
-    - Replace **`YOUR-KEY-HERE`** with your actual API key.
+
+       - Replace **`YOUR-KEY-HERE`** with your actual API key.
 
 ## Usage
 Run the script with the following command:
