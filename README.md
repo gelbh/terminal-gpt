@@ -14,8 +14,8 @@ This repository contains a Python script for a chatbot that interacts with OpenA
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/your-github-username/your-repo-name.git
-   cd your-repo-name
+   git clone https://github.com/gelbh/terminal-gpt.git
+   cd terminal=gpt
    ```
 
 2. **Set Up a Virtual Environment (Optional but recommended)**
