@@ -26,7 +26,7 @@ This repository contains a Python script for a chatbot that interacts with OpenA
 
 3. **Install Dependencies**
    ```bash
-   pip install openai python-dotenv
+   pip install -r requirements.txt
    ```
 
 ## Configuration
