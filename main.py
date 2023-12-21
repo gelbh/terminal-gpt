@@ -8,7 +8,7 @@ from datetime import datetime
 load_dotenv()
 
 # Define color codes for terminal output
-color_codes = {
+colors = {
     "black": "\033[0;30m",
     "red": "\033[0;31m",
     "green": "\033[0;32m",
@@ -56,7 +56,7 @@ def chat_with_gpt(prompt, history, model):
 def save_history_to_file(history):
     # Check if history is empty
     if not history:
-        print(f"{color_codes['red']}\n\nNo history to save.{color_codes['reset']}")
+        print(f"{colors['red']}\n\nNo history to save.{colors['reset']}")
         return
     
     # Ensure the folder exists
@@ -71,43 +71,48 @@ def save_history_to_file(history):
     with open(file_path, 'w') as file:
         json.dump(history, file, indent=4)
         
-    print(f"{color_codes['green']}\n\nHistory saved to {file_path}{color_codes['reset']}")
+    print(f"{colors['green']}\n\nHistory saved to {file_path}{colors['reset']}")
     
 # Main function to run the script
 def main():
     history = []
     
     # Ask user to select a model
-    print(f"{color_codes['cyan']}Select a GPT model (default is 'gpt-3.5-turbo'):")
-    print(f"{color_codes['yellow']}1. GPT-3.5 Turbo")
-    print(f"{color_codes['yellow']}2. Other model (please specify)")
-    model_choice = input(f"{color_codes['purple']}Enter your choice: ").strip()
+    print(f"{colors['blue']}Select a GPT model:{colors['reset']}")
+    print(f"{colors['yellow']}1. GPT-3.5 Turbo{colors['reset']}")
+    print(f"{colors['yellow']}4. Other model (please specify){colors['reset']}")
+    model_choice = input(f"{colors['purple']}\nEnter your choice: {colors['reset']}").strip()
     
     # Set the model based on user input
-    model = "gpt-3.5-turbo"  # Default model
-    if model_choice == "2":
-        model = input("Enter model name (e.g., gpt-4, gpt-3.5): ").strip()
+    if model_choice == "1":
+        model = "gpt-3.5-turbo"
+    elif model_choice == "2":
+        model = input(f"{colors['purple']}Enter model name: {colors['reset']}").strip()
+        if not model:
+            model = "gpt-3.5-turbo"
     
     try:
         # Chat loop
         while True:
-            prompt = input("\n" + color_codes["purple"] + "You: " + color_codes["cyan"]).strip()
+            prompt = input(f"\n{colors["purple"]}You: {colors['reset']}").strip()
             
             # Check for special commands
             if prompt.lower() in ["exit", "quit"]:
-                save_history_to_file(history)
+                save_confirmation = input(f"{colors['blue']}\nDo you want to save the chat history before exiting? (y/n): {colors['reset']}").strip().lower()
+                if save_confirmation == 'y':
+                    save_history_to_file(history)
                 break
             elif not prompt:
-                print(color_codes["red"] + "Please enter a prompt." + color_codes["reset"])
+                print(f"{colors["red"]}Please enter a prompt{colors["reset"]}")
                 continue
             
             response = chat_with_gpt(prompt, history, model)
             history.append({"role": "user", "content": prompt})
             history.append({"role": "system", "content": response})
             
-            print("\n" + color_codes["purple"] + "GPT:" + color_codes["green"], response, color_codes["reset"])
+            print("\n" + colors["purple"] + "GPT:" + colors["green"], response, colors["reset"])
     except KeyboardInterrupt:
-        save_history_to_file(history)
+        return
 
 if __name__ == "__main__":
     main()
