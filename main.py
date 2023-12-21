@@ -47,6 +47,16 @@ voices = [
     "nova",
     "shimmer"
 ]
+
+def make_file_in_dir(directory, filename):
+    directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
+            
+    # Ensure the folder exists
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    return os.path.join(directory, filename)
+    
     
 # Function to save chat history to a file
 def save_history_to_file(history):
@@ -55,13 +65,7 @@ def save_history_to_file(history):
         print(f"{colors['red']}\n\nNo history to save.{colors['reset']}")
         return
     
-    # Ensure the folder exists
-    if not os.path.exists("chat_histories"):
-        os.makedirs("chat_histories")
-        
-    # Create a timestamped filename
-    filename = datetime.now().strftime("%Y%m%d_%H%M%S.json")
-    file_path = os.path.join("chat_histories", filename)
+    file_path = make_file_in_dir("chat_histories", datetime.now().strftime("%Y%m%d_%H%M%S.json"))
 
     # Write the history to the file
     with open(file_path, 'w') as file:
@@ -120,14 +124,8 @@ def chat_with_gpt(prompt, history, model):
                 voice=voice,
                 input=prompt
             )
-    
-            # Ensure the folder exists
-            if not os.path.exists("speeches"):
-                os.makedirs("speeches")
-        
-            # Create a timestamped filename
-            filename = datetime.now().strftime("%Y%m%d_%H%M%S.mp3")
-            file_path = os.path.join("speeches", filename)
+            
+            file_path = make_file_in_dir("speeches", datetime.now().strftime("%Y%m%d_%H%M%S.mp3"))
                 
             response.stream_to_file(file_path)
             
@@ -155,12 +153,12 @@ def main():
     model = select_from_list(models, "GPT model", "gpt-3.5-turbo")
     
     try:
-        # Chat loop
         while True:
             prompt = input(f"\n{colors["purple"]}You: {colors['reset']}").strip()
             
-            # Check for special commands
             if prompt.lower() in ["exit", "quit"]:
+                if not history:
+                    return
                 save_confirmation = input(f"{colors['blue']}\nDo you want to save the chat history before exiting? (y/n): {colors['reset']}").strip().lower()
                 if save_confirmation == 'y':
                     save_history_to_file(history)
@@ -170,10 +168,9 @@ def main():
                 continue
             
             response = chat_with_gpt(prompt, history, model)
-            
-            if model not in ["tts-1"]:
-                history.append({"role": "user", "content": prompt})
-                history.append({"role": "system", "content": response})
+
+            history.append({"role": "user", "content": prompt})
+            history.append({"role": "system", "content": response})
             
             print("\n" + colors["purple"] + "GPT:" + colors["green"], response, colors["reset"])
     except KeyboardInterrupt:
