@@ -28,33 +28,11 @@ colors = {
     "reset": "\033[0m"
 }
 
-# Get the API key from environment variables
-api_key = os.environ.get("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("The OPENAI_API_KEY environment variable is not set")
-
-# Initialize the OpenAI client
-client = OpenAI(api_key=api_key)
-
 # Available models list
 available_models = ["gpt-3.5-turbo", "gpt-4", "davinci-codex", "curie-codex"]
 
-# Function to chat with a specified GPT model
-def chat_with_gpt(prompt, history, model):
-    try:
-        messages = history + [{"role": "user", "content": prompt}]
-        completion = client.chat.completions.create(
-            model=model,
-            messages=messages,
-        )
-        return completion.choices[0].message.content
-    except RateLimitError:
-        return "Rate limit exceeded. Please try again later."
-    except OpenAIError as e:
-        return f"An error occurred with the OpenAI service: {e}"
-    except Exception as e:
-        return f"An unexpected error occurred: {e}"
-    
+# Special commands list
+commands = ['exit', 'save']
     
 # Function to save chat history to a file
 def save_history_to_file(history):
@@ -76,6 +54,31 @@ def save_history_to_file(history):
         json.dump(history, file, indent=4)
         
     print(f"{colors['green']}\n\nHistory saved to {file_path}{colors['reset']}")
+
+
+# Function to chat with a specified GPT model
+def chat_with_gpt(prompt, history, model):
+    # Get the API key from environment variables
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("The OPENAI_API_KEY environment variable is not set")
+    
+    # Initialize the OpenAI client
+    client = OpenAI(api_key=api_key)
+
+    try:
+        messages = history + [{"role": "user", "content": prompt}]
+        completion = client.chat.completions.create(
+            model=model,
+            messages=messages,
+        )
+        return completion.choices[0].message.content
+    except RateLimitError:
+        return "Rate limit exceeded. Please try again later."
+    except OpenAIError as e:
+        return f"An error occurred with the OpenAI service: {e}"
+    except Exception as e:
+        return f"An unexpected error occurred: {e}"
     
     
 # Main function to run the script
