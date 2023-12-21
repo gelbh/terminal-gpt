@@ -170,8 +170,10 @@ def main():
                 continue
             
             response = chat_with_gpt(prompt, history, model)
-            history.append({"role": "user", "content": prompt})
-            history.append({"role": "system", "content": response})
+            
+            if model not in ["tts-1"]:
+                history.append({"role": "user", "content": prompt})
+                history.append({"role": "system", "content": response})
             
             print("\n" + colors["purple"] + "GPT:" + colors["green"], response, colors["reset"])
     except KeyboardInterrupt:
