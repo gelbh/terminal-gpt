@@ -2,8 +2,10 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
+# Load environment variables
 load_dotenv()
 
+# Define color codes for terminal output
 color_codes = {
     "black": "\033[0;30m",
     "red": "\033[0;31m",
@@ -24,13 +26,16 @@ color_codes = {
     "reset": "\033[0m"
 }
 
+# Get the API key from environment variables
 api_key = os.environ.get("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("The OPENAI_API_KEY environment variable is not set")
 
+# Initialize the OpenAI client
 client = OpenAI(api_key=api_key)
 
-def chat_with_gpt(prompt, history, model="gpt-3.5-turbo"):
+# Function to chat with a specified GPT model
+def chat_with_gpt(prompt, history, model):
     try:
         messages = history + [{"role": "user", "content": prompt}]
         completion = client.chat.completions.create(
@@ -40,9 +45,23 @@ def chat_with_gpt(prompt, history, model="gpt-3.5-turbo"):
         return completion.choices[0].message.content
     except Exception as e:
         return f"An error occurred: {e}"
-
+    
+# Main function to run the script
 def main():
     history = []
+    
+    # Ask user to select a model
+    print("Select a GPT model (default is 'gpt-3.5-turbo'):")
+    print("1. GPT-3.5 Turbo")
+    print("2. Other model (please specify)")
+    model_choice = input("Enter your choice: ").strip()
+    
+    # Set the model based on user input
+    model = "gpt-3.5-turbo"  # Default model
+    if model_choice == "2":
+        model = input("Enter model name (e.g., gpt-4, gpt-3.5): ").strip()
+    
+    # Chat loop
     while True:
         prompt = input("\n" + color_codes["purple"] + "You: " + color_codes["cyan"]).strip()
         if prompt.lower() in ["exit", "quit"]:
@@ -51,7 +70,7 @@ def main():
             print(color_codes["red"] + "Please enter a prompt." + color_codes["reset"])
             continue
         
-        response = chat_with_gpt(prompt, history)
+        response = chat_with_gpt(prompt, history, model)
         history.append({"role": "user", "content": prompt})
         history.append({"role": "system", "content": response})
         
