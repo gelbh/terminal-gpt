@@ -36,6 +36,9 @@ if not api_key:
 # Initialize the OpenAI client
 client = OpenAI(api_key=api_key)
 
+# Available models list
+available_models = ["gpt-3.5-turbo", "gpt-4", "davinci-codex", "curie-codex"]
+
 # Function to chat with a specified GPT model
 def chat_with_gpt(prompt, history, model):
     try:
@@ -51,6 +54,7 @@ def chat_with_gpt(prompt, history, model):
         return f"An error occurred with the OpenAI service: {e}"
     except Exception as e:
         return f"An unexpected error occurred: {e}"
+    
     
 # Function to save chat history to a file
 def save_history_to_file(history):
@@ -73,23 +77,26 @@ def save_history_to_file(history):
         
     print(f"{colors['green']}\n\nHistory saved to {file_path}{colors['reset']}")
     
+    
 # Main function to run the script
 def main():
     history = []
     
-    # Ask user to select a model
-    print(f"{colors['blue']}Select a GPT model:{colors['reset']}")
-    print(f"{colors['yellow']}1. GPT-3.5 Turbo{colors['reset']}")
-    print(f"{colors['yellow']}4. Other model (please specify){colors['reset']}")
-    model_choice = input(f"{colors['purple']}\nEnter your choice: {colors['reset']}").strip()
-    
+    # Display available models
+    print(f"{colors['blue']}Select a GPT model:")
+    for i, model in enumerate(available_models, start=1):
+        print(f"{colors['yellow']}{i}. {model}{colors['reset']}")
+
+    model_choice = input(f"{colors['purple']}\nEnter your choice (number or model name): {colors['reset']}").strip()
+
     # Set the model based on user input
-    if model_choice == "1":
+    if model_choice.isdigit() and 1 <= int(model_choice) <= len(available_models):
+        model = available_models[int(model_choice) - 1]
+    elif model_choice in available_models:
+        model = model_choice
+    else:
+        print(f"{colors['red']}Invalid choice. Defaulting to 'gpt-3.5-turbo'.{colors['reset']}")
         model = "gpt-3.5-turbo"
-    elif model_choice == "2":
-        model = input(f"{colors['purple']}Enter model name: {colors['reset']}").strip()
-        if not model:
-            model = "gpt-3.5-turbo"
     
     try:
         # Chat loop
