@@ -17,16 +17,23 @@ colors = {
     "purple": "\033[0;35m",
     "cyan": "\033[0;36m",
     "white": "\033[0;37m",
-    "bold_black": "\033[1;30m",
-    "bold_red": "\033[1;31m",
-    "bold_green": "\033[1;32m",
-    "bold_yellow": "\033[1;33m",
-    "bold_blue": "\033[1;34m",
-    "bold_purple": "\033[1;35m",
-    "bold_cyan": "\033[1;36m",
-    "bold_white": "\033[1;37m",
+    "bright_black": "\033[0;90m",
+    "bright_red": "\033[0;91m",
+    "bright_green": "\033[0;92m",
+    "bright_yellow": "\033[0;93m",
+    "bright_blue": "\033[0;94m",
+    "bright_purple": "\033[0;95m",
+    "bright_cyan": "\033[0;96m",
+    "bright_white": "\033[0;97m",
+    "bold": "\033[1m",
+    "dim": "\033[2m",
+    "underlined": "\033[4m",
+    "blink": "\033[5m",
+    "reverse": "\033[7m",
+    "hidden": "\033[8m",
     "reset": "\033[0m"
 }
+
 
 # Models list
 models = [
@@ -137,7 +144,17 @@ def chat_with_gpt(prompt, history, model):
                 messages=messages,
             )
             
-            return response.choices[0].message.content
+            response = response.choices[0].message.content
+            
+            if "```" in response:
+                code_block = response.split("```")[1]
+                formatted_code = f"{colors['bright_white']}\n"
+                for line in code_block.split('\n'):
+                    formatted_code += "    " + line + "\n"
+                formatted_code += f"{colors['green']}"
+                response = response.replace(f"```{code_block}```", formatted_code)
+            
+            return response
     except RateLimitError:
         return "Rate limit exceeded. Please try again later."
     except OpenAIError as e:
@@ -156,7 +173,7 @@ def main():
         while True:
             prompt = input(f"\n{colors["purple"]}You: {colors['reset']}").strip()
             
-            if prompt.lower() in ["exit", "quit"]:
+            if prompt.lower() in ["exit", "quit", "q"]:
                 if not history:
                     return
                 save_confirmation = input(f"{colors['blue']}\nDo you want to save the chat history before exiting? (y/n): {colors['reset']}").strip().lower()
