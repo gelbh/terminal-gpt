@@ -147,12 +147,16 @@ def chat_with_gpt(prompt, history, model):
             response = response.choices[0].message.content
             
             if "```" in response:
-                code_block = response.split("```")[1]
-                formatted_code = f"{colors['bright_white']}\n"
-                for line in code_block.split('\n'):
-                    formatted_code += "    " + line + "\n"
-                formatted_code += f"{colors['green']}"
-                response = response.replace(f"```{code_block}```", formatted_code)
+                split_response = response.split("```")
+                for i in range(1, len(split_response), 2):  # Iterate over every second element (code blocks)
+                    code_block = split_response[i]
+                    formatted_code = f"{colors['bright_white']}{colors['bold']}\n"
+                    for line in code_block.split('\n'):
+                        formatted_code += "    " + line + "\n"
+                    formatted_code += f"{colors['green']}"
+                    split_response[i] = formatted_code
+
+                response = "".join(split_response)
             
             return response
     except RateLimitError:
