@@ -2,12 +2,12 @@
 
 ## Overview
 
-This repository contains a Python script for a chatbot that interacts with OpenAI's GPT-3.5 Turbo model. The script features a colorful command-line interface (CLI) for an enhanced user experience. The chatbot maintains a conversation history, allowing for context-aware interactions.
+This repository contains a Python script for a chatbot that interacts with an OpenAI GPT model. The script features a colorful command-line interface (CLI) for an enhanced user experience. The chatbot maintains a conversation history, allowing for context-aware interactions.
 
 ## Prerequisites
 
 - Python 3.x
-- `openai` Python package
+- `openai` python package
 - `python-dotenv` package for environment variable management
 
 ## Installation
