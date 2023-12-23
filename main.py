@@ -1,51 +1,31 @@
 import json
 import os
-from openai import OpenAI, RateLimitError, OpenAIError
+from openai import OpenAI
 from dotenv import load_dotenv
 from datetime import datetime
+import subprocess
 
 # Load environment variables
 load_dotenv()
 
-# Define color codes for terminal output
-colors = {
-    "black": "\033[0;30m",
-    "red": "\033[0;31m",
-    "green": "\033[0;32m",
-    "yellow": "\033[0;33m",
-    "blue": "\033[0;34m",
-    "purple": "\033[0;35m",
-    "cyan": "\033[0;36m",
-    "white": "\033[0;37m",
-    "bright_black": "\033[0;90m",
-    "bright_red": "\033[0;91m",
-    "bright_green": "\033[0;92m",
-    "bright_yellow": "\033[0;93m",
-    "bright_blue": "\033[0;94m",
-    "bright_purple": "\033[0;95m",
-    "bright_cyan": "\033[0;96m",
-    "bright_white": "\033[0;97m",
-    "bold": "\033[1m",
-    "dim": "\033[2m",
-    "underlined": "\033[4m",
-    "blink": "\033[5m",
-    "reverse": "\033[7m",
-    "hidden": "\033[8m",
-    "reset": "\033[0m"
-}
+# Main menu options
+menu = [
+    "Chat with GPT",
+    "Execute git commands with GPT",
+    "Generate an image with DALL-E",
+    "Generate speech with TTS",
+    "Exit"
+]
 
-
-# Models list
+# Models
 models = [
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-16k",
     "gpt-4",
-    "gpt-4-32k",
-    "dall-e-3",
-    "tts-1"
+    "gpt-4-32k"
 ]
 
-# Models list
+# Voices
 voices = [
     "alloy",
     "echo",
@@ -55,145 +35,273 @@ voices = [
     "shimmer"
 ]
 
+
+def colored(*args):
+    """Applies ANSI color/style codes to multiple text segments, with validation checks."""
+    colors = {
+        "": "",
+        "black": "\033[0;30m",
+        "red": "\033[0;31m",
+        "green": "\033[0;32m",
+        "yellow": "\033[0;33m",
+        "blue": "\033[0;34m",
+        "purple": "\033[0;35m",
+        "cyan": "\033[0;36m",
+        "white": "\033[0;37m",
+    }
+    styles = {
+        "": "",
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+        "dim": "\033[2m",
+        "underlined": "\033[4m",
+        "blink": "\033[5m",
+        "reverse": "\033[7m",
+        "hidden": "\033[8m"
+    }
+
+    colored_text = ""
+    for arg in args:
+        text = arg[0]
+        color = arg[1] if len(arg) > 1 else ""
+        style = arg[2] if len(arg) > 2 else ""
+
+        if color not in colors:
+            raise ValueError(f"Color '{color}' not recognized.")
+        if style not in styles:
+            raise ValueError(f"Style '{style}' not recognized.")
+
+        colored_text += f"{styles[style]}{colors[color]}{text}{styles['reset']}"
+
+    return colored_text
+
+
+def cprint(*args):
+    """Prints multiple text segments in specified colors and/or styles."""
+    print(colored(*args))
+    
+    
+def cinput(prompt_args):
+    """Get input with a prompt displayed in the specified color and/or style."""
+    return input(colored(prompt_args)).strip()
+
+
+def get_choice_from_list(list):
+    """
+    This function displays a menu and repeatedly asks for the user's choice until a valid option is selected.
+    """
+    while True:
+        cprint(("\nSelect an option:", "blue"))
+        for i, selection in enumerate(list, start=1):
+            cprint((f"{i}. {selection}", "yellow"))
+
+        choice = cinput(("\nEnter your choice: ", "purple"))
+
+        if choice.isdigit() and 1 <= int(choice) <= len(list):
+            return list[int(choice) - 1]
+        else:
+            cprint(("Invalid choice. Please try again.", "red"))
+            
+
 def make_file_in_dir(directory, filename):
+    """
+    This function creates a file in the specified directory.
+    """
     directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
             
-    # Ensure the folder exists
     if not os.path.exists(directory):
         os.makedirs(directory)
     
     return os.path.join(directory, filename)
     
     
-# Function to save chat history to a file
 def save_history_to_file(history):
-    # Check if history is empty
+    """
+    This function saves the chat history to a file.
+    """
     if not history:
-        print(f"{colors['red']}\n\nNo history to save.{colors['reset']}")
+        cprint(("No history to save.", "red"))
         return
     
     file_path = make_file_in_dir("chat_histories", datetime.now().strftime("%Y%m%d_%H%M%S.json"))
 
-    # Write the history to the file
     with open(file_path, 'w') as file:
         json.dump(history, file, indent=4)
         
-    print(f"{colors['green']}\n\nHistory saved to {file_path}{colors['reset']}")
+    cprint((f"History saved to {file_path}", "green"))
     
 
-# Function to select an item from a list
-def select_from_list(list, name, default):
-    # Display list
-    print(f"{colors['blue']}Select a {name}:")
-    for i, selection in enumerate(list, start=1):
-        print(f"{colors['yellow']}{i}. {selection}{colors['reset']}")
-
-    selection_choice = input(f"{colors['purple']}\nEnter your choice (number or name): {colors['reset']}").strip()
-
-    # Set the model based on user input
-    if selection_choice.isdigit() and 1 <= int(selection_choice) <= len(list):
-        selection = list[int(selection_choice) - 1]
-    elif selection_choice in list:
-        selection = selection_choice
+def color_parts_of_string(string, regex, part_color, string_color):
+    if regex in string:
+        parts = string.split(regex)
+        formatted_string = ""
+        is_part = False
+        for part in parts:
+            if is_part:
+                formatted_string += colored((part, part_color))
+            else:
+                formatted_string += colored((part, string_color))
+            is_part = not is_part
+        return formatted_string
     else:
-        print(f"{colors['red']}Invalid choice. Defaulting to '{default}'.{colors['reset']}")
-        selection = default
+        return string
+
+def chat_with_gpt(client, prompt, model, history):
+    """
+    This function takes a natural language prompt and uses GPT to generate a response.
+    """
+    try:
+        messages = history + [{"role": "user", "content": prompt}]
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+        )
         
-    return selection
+        response = response.choices[0].message.content
+        
+        return colored((response, "green"))
+    except Exception as e:
+        return colored((f"An unexpected error occurred: {e}", "red"))
+    
+    
+def generate_image_with_dall_e(client, prompt):
+    """
+    This function takes a natural language prompt and uses DALL-E to generate an image.
+    """
+    try:
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+        
+        return colored((response.data[0].url, "green"))
+    except Exception as e:
+        return colored((f"An unexpected error occurred: {e}", "red"))
+    
+    
+def generate_speech_with_tts(client, prompt):
+    """
+    This function takes a natural language prompt and uses TTS to generate speech.
+    """
+    try:
+        voice = get_choice_from_list(voices)
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice=voice,
+            input=prompt
+        )
+        
+        file_path = make_file_in_dir("speeches", datetime.now().strftime("%Y%m%d_%H%M%S.mp3"))
+        response.stream_to_file(file_path)
+        
+        return colored((f"Audio saved to {file_path}", "green"))
+    except Exception as e:
+        return colored((f"An unexpected error occurred: {e}", "red"))
+    
+    
+def execute_git_commands(git_commands):
+    """
+    This function executes a list of Git commands in the current directory.
+    """
+    try:
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        for cmd in git_commands:
+            cprint(("Executing: ", ""), (cmd, "blue"))
+            result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
+            cprint((result.stdout.decode(), "green"))
+    except subprocess.CalledProcessError as e:
+        cprint(("Error executing git command:: ", ""), (e.output.decode(), "red"))
 
 
-# Function to chat with a specified GPT model
-def chat_with_gpt(prompt, history, model):
-    # Get the API key from environment variables
+def extract_git_commands_from_text(text):
+    """
+    This function extracts git commands from a string.
+    """
+    def is_valid_git_command(command):
+        if command.startswith(("`git", "git")):
+            return True
+        return False
+
+    git_commands = text.strip().split('\n')
+    return [cmd.strip() for cmd in git_commands if cmd.strip() and is_valid_git_command(cmd)]
+
+
+def main():
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise ValueError("The OPENAI_API_KEY environment variable is not set")
     
-    # Initialize the OpenAI client
     client = OpenAI(api_key=api_key)
-
-    try:
-        if model == "dall-e-3":
-            response = client.images.generate(
-                model=model,
-                prompt=prompt,
-                size="1024x1024",
-                quality="standard",
-                n=1,
-            )
-            
-            return response.data[0].url
-        elif model == "tts-1":
-            voice = select_from_list(voices, "voice", "alloy")
-        
-            response = client.audio.speech.create(
-                model=model,
-                voice=voice,
-                input=prompt
-            )
-            
-            file_path = make_file_in_dir("speeches", datetime.now().strftime("%Y%m%d_%H%M%S.mp3"))
-                
-            response.stream_to_file(file_path)
-            
-            return f"Audio saved to {file_path}"
-        else:
-            messages = history + [{"role": "user", "content": prompt}]
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-            )
-            
-            response = response.choices[0].message.content
-            
-            if "```" in response:
-                split_response = response.split("```")
-                for i in range(1, len(split_response), 2):  # Iterate over every second element (code blocks)
-                    code_block = split_response[i]
-                    formatted_code = f"{colors['bright_white']}{colors['bold']}\n"
-                    for line in code_block.split('\n'):
-                        formatted_code += "    " + line + "\n"
-                    formatted_code += f"{colors['green']}"
-                    split_response[i] = formatted_code
-
-                response = "".join(split_response)
-            
-            return response
-    except RateLimitError:
-        return "Rate limit exceeded. Please try again later."
-    except OpenAIError as e:
-        return f"An error occurred with the OpenAI service: {e}"
-    except Exception as e:
-        return f"An unexpected error occurred: {e}"
+    if not client:
+        raise ValueError("Could not initialize the OpenAI client")
     
-    
-# Main function to run the script
-def main():
     history = []
-        
-    model = select_from_list(models, "GPT model", "gpt-3.5-turbo")
     
     try:
         while True:
-            prompt = input(f"\n{colors["purple"]}You: {colors['reset']}").strip()
+            menu_choice = get_choice_from_list(menu)
             
-            if prompt.lower() in ["exit", "quit", "q"]:
-                if not history:
-                    return
-                save_confirmation = input(f"{colors['blue']}\nDo you want to save the chat history before exiting? (y/n): {colors['reset']}").strip().lower()
-                if save_confirmation == 'y':
-                    save_history_to_file(history)
-                break
-            elif not prompt:
-                print(f"{colors["red"]}Please enter a prompt{colors["reset"]}")
-                continue
+            if menu_choice == menu[3]:
+                return
+            elif menu_choice in [menu[0], menu[1]]:    
+                model = get_choice_from_list(models)
             
-            response = chat_with_gpt(prompt, history, model)
+            while True:
+                prompt = cinput(("\nYou: ", "purple"))
+                
+                if prompt.lower() in ["exit", "quit", "q"]:
+                    if not history:
+                        return
+                    
+                    save_confirmation = cinput(("\nDo you want to save the chat history before exiting? (y/n): ", "blue")).lower()
+                    if save_confirmation == 'y':
+                        save_history_to_file(history)
+                        
+                    break
+                elif not prompt:
+                    cprint(("\nPlease enter a prompt", "red"))
+                    continue
+                
+                if menu_choice == menu[0]:
+                    response = chat_with_gpt(client, prompt, model, history)
+                    response = color_parts_of_string(response, "```", "blue", "green")
+                    response = color_parts_of_string(response, "`", "blue", "green")
+                    cprint(("\nGPT: ", "purple"), (response, ""))
+                elif menu_choice == menu[1]:
+                    prompt = f"Translate this into a series of git commands: {prompt}"
+                    response = chat_with_gpt(client, prompt, model, history)
+                    
+                    git_commands = extract_git_commands_from_text(response)
+                    if git_commands:
+                        cprint(("\nSuggested git commands:", "yellow"))
+                        for cmd in git_commands:
+                            cprint((cmd, "cyan"))
+                            
+                    options = [
+                        "Execute git commands",
+                        "Ask to fix",
+                        "Exit"
+                    ]
+                    option = get_choice_from_list(options)
+                    if option == options[0]:
+                        execute_git_commands(git_commands)
+                        return
+                    elif option == options[1]:
+                        continue
+                    else:
+                        return
+                elif menu_choice == menu[2]:
+                    response = generate_image_with_dall_e(client, prompt)
+                    cprint(("\nDALL-E: ", "purple"), (response, ""))
+                elif menu_choice == menu[3]:
+                    response = generate_speech_with_tts(client, prompt)
+                    cprint(("\nTTS: ", "purple"), (response, ""))
 
-            history.append({"role": "user", "content": prompt})
-            history.append({"role": "system", "content": response})
-            
-            print("\n" + colors["purple"] + "GPT:" + colors["green"], response, colors["reset"])
+                history.append({"role": "user", "content": prompt})
+                history.append({"role": "system", "content": response})
     except KeyboardInterrupt:
         return
 
