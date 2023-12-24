@@ -8,34 +8,6 @@ import subprocess
 # Load environment variables
 load_dotenv()
 
-# Main menu options
-menu = [
-    "Chat with GPT",
-    "Execute git commands with GPT",
-    "Generate an image with DALL-E",
-    "Generate speech with TTS",
-    "Exit"
-]
-
-# Models
-models = [
-    "gpt-3.5-turbo",
-    "gpt-3.5-turbo-16k",
-    "gpt-4",
-    "gpt-4-32k"
-]
-
-# Voices
-voices = [
-    "alloy",
-    "echo",
-    "fable",
-    "onyx",
-    "nova",
-    "shimmer"
-]
-
-
 def colored(*args):
     """Applies ANSI color/style codes to multiple text segments, with validation checks."""
     colors = {
@@ -187,7 +159,15 @@ def generate_speech_with_tts(client, prompt):
     This function takes a natural language prompt and uses TTS to generate speech.
     """
     try:
-        voice = get_choice_from_list(voices)
+        voice = get_choice_from_list([
+            "alloy",
+            "echo",
+            "fable",
+            "onyx",
+            "nova",
+            "shimmer"
+        ])
+        
         response = client.audio.speech.create(
             model="tts-1",
             voice=voice,
@@ -220,8 +200,8 @@ def extract_git_commands_from_text(text):
     """
     This function extracts git commands from a string.
     """
-    def is_valid_git_command(command):
-        if command.startswith(("`git", "git")):
+    def is_valid_git_command(cmd):
+        if cmd.startswith(("`git", "git")):
             return True
         return False
 
@@ -238,7 +218,13 @@ def main():
     if not client:
         raise ValueError("Could not initialize the OpenAI client")
     
-    history = []
+    menu = [
+        "Chat with GPT",
+        "Execute git commands with GPT",
+        "Generate an image with DALL-E",
+        "Generate speech with TTS",
+        "Exit"
+    ]
     
     try:
         while True:
@@ -247,7 +233,14 @@ def main():
             if menu_choice == menu[3]:
                 return
             elif menu_choice in [menu[0], menu[1]]:    
-                model = get_choice_from_list(models)
+                model = get_choice_from_list([
+                    "gpt-3.5-turbo",
+                    "gpt-3.5-turbo-16k",
+                    "gpt-4",
+                    "gpt-4-32k"
+                ])
+    
+            history = []
             
             while True:
                 prompt = cinput(("\nYou: ", "purple"))
@@ -255,11 +248,9 @@ def main():
                 if prompt.lower() in ["exit", "quit", "q"]:
                     if not history:
                         return
-                    
                     save_confirmation = cinput(("\nDo you want to save the chat history before exiting? (y/n): ", "blue")).lower()
                     if save_confirmation == 'y':
                         save_history_to_file(history)
-                        
                     break
                 elif not prompt:
                     cprint(("\nPlease enter a prompt", "red"))
