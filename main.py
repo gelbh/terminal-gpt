@@ -1,9 +1,10 @@
 import json
 import os
+import subprocess
+import argparse
 from openai import OpenAI
 from dotenv import load_dotenv
 from datetime import datetime
-import subprocess
 
 # Load environment variables
 load_dotenv()
@@ -210,6 +211,11 @@ def extract_git_commands_from_text(text):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("prompt", type=str, nargs='?', help="The prompt to start the conversation with")
+    parser.add_argument("--model", type=str, help="The GPT model to use for the conversation")
+    args = parser.parse_args()
+    
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise ValueError("The OPENAI_API_KEY environment variable is not set")
@@ -228,10 +234,15 @@ def main():
     
     try:
         while True:
-            menu_choice = get_choice_from_list(menu)
+            if args.prompt:
+                menu_choice = menu[0]
+            else:
+                menu_choice = get_choice_from_list(menu)
             
             if menu_choice == menu[3]:
                 return
+            elif args.model:
+                model = args.model
             elif menu_choice in [menu[0], menu[1]]:    
                 model = get_choice_from_list([
                     "gpt-3.5-turbo",
@@ -243,7 +254,10 @@ def main():
             history = []
             
             while True:
-                prompt = cinput(("\nYou: ", "purple"))
+                if args.prompt:
+                    prompt = args.prompt
+                else:
+                    prompt = cinput(("\nYou: ", "purple"))
                 
                 if prompt.lower() in ["exit", "quit", "q"]:
                     if not history:
@@ -261,6 +275,9 @@ def main():
                     response = color_parts_of_string(response, "```", "blue", "green")
                     response = color_parts_of_string(response, "`", "blue", "green")
                     cprint(("\nGPT: ", "purple"), (response, ""))
+                    
+                    if args.prompt:
+                        return
                 elif menu_choice == menu[1]:
                     prompt = f"Translate this into a series of git commands: {prompt}"
                     response = chat_with_gpt(client, prompt, model, history)
