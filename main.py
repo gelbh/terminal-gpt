@@ -194,7 +194,7 @@ def execute_git_commands(git_commands):
             result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
             cprint((result.stdout.decode(), "green"))
     except subprocess.CalledProcessError as e:
-        cprint(("Error executing git command:: ", ""), (e.output.decode(), "red"))
+        cprint(("Error executing git command: ", ""), (e.output.decode(), "red"))
 
 
 def extract_git_commands_from_text(text):
@@ -205,6 +205,8 @@ def extract_git_commands_from_text(text):
         if cmd.startswith(("`git", "git")):
             return True
         return False
+    
+    print(text)
 
     git_commands = text.strip().split('\n')
     return [cmd.strip() for cmd in git_commands if cmd.strip() and is_valid_git_command(cmd)]
@@ -256,6 +258,11 @@ def main():
             while True:
                 if args.prompt:
                     prompt = args.prompt
+                elif menu_choice == menu[1]:
+                    if 'options' not in locals():
+                        prompt = cinput(("\nWhat would you like to do with git: ", "purple"))
+                    else:
+                        prompt = cinput(("\nWhat would you like to fix: ", "purple"))
                 else:
                     prompt = cinput(("\nYou: ", "purple"))
                 
@@ -279,7 +286,10 @@ def main():
                     if args.prompt:
                         return
                 elif menu_choice == menu[1]:
-                    prompt = f"Translate this into a series of git commands: {prompt}"
+                    if 'options' not in locals():
+                        prompt = f"Translate this into a series of git commands: {prompt}"
+                    else:
+                        prompt = f"Fix the following with the git commands provided: {prompt}"
                     response = chat_with_gpt(client, prompt, model, history)
                     
                     git_commands = extract_git_commands_from_text(response)
@@ -298,7 +308,7 @@ def main():
                         execute_git_commands(git_commands)
                         return
                     elif option == options[1]:
-                        continue
+                        pass
                     else:
                         return
                 elif menu_choice == menu[2]:
